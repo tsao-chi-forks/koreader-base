@@ -52,6 +52,18 @@ set(CMAKE_AR "$ENV{CROSS_TC}-ar" CACHE FILEPATH "Archive")
 set(CMAKE_RANLIB "$ENV{CROSS_TC}-ranlib" CACHE FILEPATH "RanLib")
 set(CMAKE_NM "$ENV{CROSS_TC}-nm" CACHE FILEPATH "NM")
 
+if($ENV{CROSS_TC} MATCHES "^arm-apple-darwin")
+	set(CMAKE_SYSTEM_PROCESSOR aarch64)
+	execute_process(COMMAND xcode-select -print-path
+    	OUTPUT_VARIABLE XCODE_SELECT OUTPUT_STRIP_TRAILING_WHITESPACE)
+	set(CMAKE_C_COMPILER "${XCODE_SELECT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang")
+	set(CMAKE_CXX_COMPILER "${XCODE_SELECT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++")
+	set(CMAKE_STRIP "${XCODE_SELECT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/strip")
+	set(CMAKE_AR "${XCODE_SELECT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/ar")
+	set(CMAKE_RANLIB "${XCODE_SELECT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/ranlib")
+	set(CMAKE_NM "${XCODE_SELECT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/nm")
+endif()
+
 # Set path(s) to search for libraries/binaries/headers
 set(CMAKE_SYSROOT $ENV{SYSROOT})
 set(CMAKE_STAGING_PREFIX $ENV{CROSS_STAGING})

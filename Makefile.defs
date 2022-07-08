@@ -171,6 +171,11 @@ else ifeq ($(TARGET), cervantes)
 		CHOST?=arm-linux-gnueabi
 	endif
 	export USE_LJ_WPACLIENT=1
+else ifeq ($(TARGET), ios)
+	CHOST?=arm-apple-darwin
+	export SDL=1
+	export IOS=1
+	export DARWIN=1
 else ifndef TARGET
 	# if TARGET is not defined we will build an emulator on current machine
 	export EMULATE_READER=1
@@ -191,6 +196,9 @@ ifdef DARWINHOST
 	ifdef ANDROID
 		CCACHE=
 	endif
+	ifdef IOS
+		CCACHE=
+	endif
 endif
 
 # NOTE: This is necessary (at least on Android), because some early API levels will not put DT_NEEDED libraries in the global namespace.
@@ -198,7 +206,7 @@ endif
 #       Saner APIs behave like Linux, and wouldn't require this hack.
 USE_LUAJIT_LIB=$(or $(DARWIN),$(ANDROID),$(WIN32))
 
-SKIP_LUAJIT_BIN=$(or $(ANDROID),$(MACOS))
+SKIP_LUAJIT_BIN=$(or $(ANDROID),$(MACOS),$(IOS))
 
 # handle utility params on different host systems
 ifdef DARWINHOST
@@ -213,6 +221,10 @@ endif
 ifdef SBOX_UNAME_MACHINE
 	CC:=gcc
 	CXX:=g++
+endif
+
+ifdef IOS
+	CC:=clang
 endif
 
 # set cross-compiler/host CC and CXX
@@ -268,6 +280,18 @@ else
 	LD:=ld
 	RC:=windres
 	RANLIB:=ranlib
+endif
+
+ifdef IOS
+	IOS_SDK="iphoneos"
+	CC:="$(shell xcrun -find -sdk ${IOS_SDK} clang)"
+	CXX:="$(shell xcrun -find -sdk ${IOS_SDK} clang++)"
+	STRIP:="$(shell xcrun -find -sdk ${IOS_SDK} strip)"
+	AR:="$(shell xcrun -find -sdk ${IOS_SDK} ar)"
+	LD:="$(shell xcrun -find -sdk ${IOS_SDK} ld)"
+	RC:=
+	RANLIB:="$(shell xcrun -find -sdk ${IOS_SDK} ranlib)"
+	export SYSROOT="$(shell xcrun -find -sdk ${IOS_SDK} --show-sdk-path)"
 endif
 
 HOSTSTRIP:=strip
@@ -354,6 +378,8 @@ ARMV7_A9_ARCH:=-march=armv7-a -mtune=cortex-a9 -mfpu=neon -mthumb
 # Android.
 ANDROID_COMPAT_CFLAGS:=--sysroot $(SYSROOT)
 ANDROID_COMPAT_CXXFLAGS:=--sysroot $(SYSROOT)
+# iOS
+IOS_GENERIC_ARCH:="-arch arm64"
 # Mirror the NDK's armeabi-v7a APP_ABI (cf. #201)
 ifeq ($(ANDROID_ARCH), arm)
 	ANDROID_ARM_ARCH:=-march=armv7-a -mfpu=vfpv3-d16
@@ -449,6 +475,8 @@ else ifeq ($(TARGET), debian-armhf)
 	ARM_ARCH+=-mfloat-abi=hard
 else ifeq ($(TARGET), debian-arm64)
 	ARM_ARCH:=$(ARM64_GENERIC_ARCH)
+else ifeq ($(TARGET), ios)
+	ARM_ARCH:=$(IOS_GENERIC_ARCH)
 else
 	# else, we are compiling emulator on x86
 	ARM_ARCH:=
